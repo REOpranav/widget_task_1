@@ -108,7 +108,7 @@ function barChart(sourceData) {
     const data = {
         labels: labels,
         datasets: [{
-            label: 'Lead Source',
+            label: 'Source of Leads',
             data: sourceCount,
             backgroundColor: [
                 'rgba(255, 99, 132, 0.2)',
@@ -133,14 +133,21 @@ function barChart(sourceData) {
     }
     const ctx = document.getElementById("myBarChart").getContext("2d");
     new Chart(ctx, {
-        type: 'bar',
+        type: 'polarArea',
         data: data,
         options: {
             scales: {
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    type: "linear",
+                    suggestedMax: 5,
                 }
-            }
+            },
+            responsive: false, // Prevent automatic resizing
+            maintainAspectRatio: false, // Allow custom width & height
+            layout: {
+                padding: 10, // Optional: Adjust padding around chart
+            },
         }
     })
 }
