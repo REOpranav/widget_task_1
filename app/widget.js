@@ -21,7 +21,6 @@ class ZOHO_CRM_GET_RECORD {
                 console.log(err.message)
             }
         }
-
         return await leadSource(totalLeads).then(val => {
             return { lead_source: val.leadSource, totalValueUnderTheSpecificDate: val.totalValueUnderTheSpecificDate }
         })
@@ -38,15 +37,32 @@ class ZOHO_CRM_GET_RECORD {
 }
 
 document.addEventListener('DOMContentLoaded', async function () {
+    function showLoading() {
+        document.getElementById('loading').style.display = 'block'
+        document.getElementById('content').style.display = 'none'
+    }
+
+    function hideLoading() {
+        document.getElementById('loading').style.display = 'none'
+        document.getElementById('content').style.display = 'block'
+    }
+
     ZOHO.embeddedApp.on("PageLoad", async function (data) {
-        const leadSourceData = await new ZOHO_CRM_GET_RECORD("Leads").getLeadSource()
-        const leadConverstionRate = await new ZOHO_CRM_GET_RECORD('Contacts').getContactSource()
-        
-        await barChart(leadSourceData)
-        await convertiondatas(leadSourceData, leadConverstionRate)
-    });
+        showLoading();
+        try {
+            const leadSourceData = await new ZOHO_CRM_GET_RECORD("Leads").getLeadSource()
+            const leadConverstionRate = await new ZOHO_CRM_GET_RECORD('Contacts').getContactSource()
+
+            await barChart(leadSourceData)
+            await convertiondatas(leadSourceData, leadConverstionRate)
+        } catch (err) {
+            console.log(err.message);
+        } finally {
+            hideLoading()
+        }
+    })
     ZOHO.embeddedApp.init();
-});
+})
 
 
 // utils
