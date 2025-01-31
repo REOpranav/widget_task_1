@@ -4,14 +4,27 @@ class ZOHO_CRM_GET_RECORD {
         this.sortOrder = sortOrder
         this.pageNumber = pageNumber
     }
-
     async getLeadSource() {
-        try {
-            const response = await ZOHO.CRM.API.getAllRecords({ Entity: this.data, sort_order: this.sortOrder, page: this.pageNumber })
-            return await leadSource(response).then(val => { return { lead_source: val.leadSource, totalValueUnderTheSpecificDate: val.totalValueUnderTheSpecificDate } })
-        } catch (err) {
-            console.log(err.message)
+        let pageNumber = 1
+        let totalLeads = []
+        let nextPageHaving = true
+        while (nextPageHaving) {
+            try {
+                const response = await ZOHO.CRM.API.getAllRecords({ Entity: this.data, sort_order: this.sortOrder, page: pageNumber })
+                if (response && response?.status !== 204) {
+                    totalLeads = totalLeads.concat(response?.data)
+                    pageNumber++
+                } else {
+                    nextPageHaving = false
+                }
+            } catch (err) {
+                console.log(err.message)
+            }
         }
+
+        return await leadSource(totalLeads).then(val => {
+            return { lead_source: val.leadSource, totalValueUnderTheSpecificDate: val.totalValueUnderTheSpecificDate }
+        })
     }
 
     async getContactSource() {
@@ -28,8 +41,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     ZOHO.embeddedApp.on("PageLoad", async function (data) {
         const leadSourceData = await new ZOHO_CRM_GET_RECORD("Leads").getLeadSource()
         const leadConverstionRate = await new ZOHO_CRM_GET_RECORD('Contacts').getContactSource()
-
-        await barChart(leadSourceData, leadConverstionRate)
+        
+        await barChart(leadSourceData)
         await convertiondatas(leadSourceData, leadConverstionRate)
     });
     ZOHO.embeddedApp.init();
@@ -44,9 +57,7 @@ const leadSource = async (value, subtractDate = 30) => {
     const todayToSubtractDate = new Date()
     todayToSubtractDate?.setDate(todayToSubtractDate.getDate() - subtractDate)
 
-    let destructureData = value?.data
-
-    destructureData.forEach(fetchedValue => {
+    value.forEach(fetchedValue => {
         (fetchedValue?.Created_Time >= todayToSubtractDate?.toISOString() && totalValueUnderTheSpecificDate.push(fetchedValue))
         fetchedValue?.Data_Source !== "Manual" && (leadSource[fetchedValue?.Data_Source] = (leadSource[fetchedValue?.Data_Source] || 0) + 1)
     })
@@ -120,7 +131,6 @@ function barChart(sourceData) {
 
 
 function convertiondatas(source, convertionData) {
-
     const convertion = document.querySelector('.convertionh3')
     convertion.textContent = convertionData?.length
 
